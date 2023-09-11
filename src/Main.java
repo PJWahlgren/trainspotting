@@ -38,5 +38,6 @@ public class Main {
         new Lab1(train1_speed, train2_speed);
         // new Lab1Extra(train1_speed, train2_speed);
         p.waitFor();
+        //
     }
 }
