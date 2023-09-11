@@ -25,7 +25,7 @@ public class Lab1 {
         Semaphore d = new Semaphore(1);
         Semaphore e = new Semaphore(0);
         Semaphore f = new Semaphore(1);
-        //Semaphore g = new Semaphore(1);      Near South Station?
+        //Semaphore g = new Semaphore(1);      Near South Station??
 
 
         class Train implements Runnable {
