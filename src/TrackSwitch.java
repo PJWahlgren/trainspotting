@@ -15,10 +15,13 @@ public class TrackSwitch{
     public void switchLeft() throws CommandException {
         direction = TSimInterface.SWITCH_LEFT;
         tsi.setSwitch(xPos,yPos,direction);
+        //System.out.println("Switch left");
     }
     public void switchRight() throws CommandException{
         direction = TSimInterface.SWITCH_RIGHT;
         tsi.setSwitch(xPos,yPos,direction);
+        //System.out.println("Switch right");
+
     }
     public void invertDirection() throws CommandException{
         if (direction == TSimInterface.SWITCH_LEFT)
