@@ -28,11 +28,14 @@ public class TrainSensor implements PropertyChangeListener {
                 && command != null
                 && event.getStatus() == SensorEvent.ACTIVE) {
             //System.out.println("@Sensor " + evt.getNewValue());
-            try {
-                command.execute(event.getTrainId(), event.getStatus());
-            } catch (CommandException e) {
-                throw new RuntimeException(e);
-            }
+            Thread t = new Thread(() -> {
+                try {
+                    command.execute(event.getTrainId(), event.getStatus());
+                } catch (CommandException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            t.start();
         }
     }
 

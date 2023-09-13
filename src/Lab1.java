@@ -11,13 +11,14 @@ public class Lab1 {
   Semaphore sem3 = new Semaphore(1);
   Semaphore sem4 = new Semaphore(1);
   Semaphore semDorE = new Semaphore(1);
+  Semaphore semAorB = new Semaphore(1);
+  Semaphore SemGorH = new Semaphore(1);
 
   //There may only be one train waiting. If there are more, then we have an issue!
   Train waitingTrain;
 
 
   public Lab1(int speed1, int speed2) {
-    TrackSwitch[] switches = new TrackSwitch[4];
     List<TrainSensor> sensors = new ArrayList<>();
     Train train1 = new Train(1);
     Train train2 = new Train(2);
@@ -154,6 +155,10 @@ public class Lab1 {
       c1.setCommand((id, status) -> {
         if (trains[id].isGoingUp()){
           sem3.release();
+          if (isSemaphoreAvailable(semAorB))
+            s1.switchRight();
+          else
+            s1.switchLeft();
           notifyTrainWaiting(sem3);
         }
       });
@@ -176,6 +181,11 @@ public class Lab1 {
           if (isSemaphoreAvailable(sem3))
             s3.switchLeft();
           activateSemaphore(id, Train.Direction.DOWN, sem3);
+        }else {
+          sem4.release();
+          s4.invertDirection();
+          System.out.println(sem4);
+          notifyTrainWaiting(sem4);
         }
       });
       d2.setCommand((id, status) -> {
@@ -191,6 +201,11 @@ public class Lab1 {
           if (sem3.availablePermits() == 1)
             s3.switchRight();
           activateSemaphore(id, Train.Direction.DOWN, sem3);
+        }else {
+          sem4.release();
+          s4.invertDirection();
+          System.out.println(sem4);
+          notifyTrainWaiting(sem4);
         }
       });
       e2.setCommand((id, status) -> {
@@ -204,6 +219,7 @@ public class Lab1 {
       f1.setCommand((id, status) -> {
         if (trains[id].isGoingDown()){
           activateSemaphore(id, Train.Direction.DOWN, sem4);
+          System.out.println(sem4);
           s3.invertDirection();
           if (semDorE.availablePermits() < 1)
             semDorE.release();
@@ -212,24 +228,20 @@ public class Lab1 {
             s3.switchLeft();
           else
             s3.switchRight();
-          sem4.release();
-          notifyTrainWaiting(sem4);
-
-        }
-        if (trains[id].isGoingUp()){
-
         }
       });
 
       g1.setCommand((id, status) -> {
         if (trains[id].isGoingUp()){
-          if (sem4.availablePermits() == 1)
+          System.out.println("sem4 " + isSemaphoreAvailable(sem4));
+          if (isSemaphoreAvailable(sem4))
             s4.switchLeft();
           activateSemaphore(id, Train.Direction.UP, sem4);
         }else{
           sem3.release();
           notifyTrainWaiting(sem3);
           sem4.release();
+          System.out.println(sem4);
           s4.invertDirection();
           notifyTrainWaiting(sem4);
         }
@@ -240,16 +252,16 @@ public class Lab1 {
 
       h1.setCommand((id, status) -> {
         if (trains[id].isGoingUp()){
-          System.out.println("sem4 " + isSemaphoreAvailable(sem4));
           if (isSemaphoreAvailable(sem4))
             s4.switchRight();
           activateSemaphore(id, Train.Direction.UP, sem4);
         }else{
+          sem4.release();
+          notifyTrainWaiting(sem4);
           sem3.release();
           notifyTrainWaiting(sem3);
-          sem4.release();
+          System.out.println(sem4);
           s4.invertDirection();
-          notifyTrainWaiting(sem4);
         }
       });
       h2.setCommand((id, status) -> {
@@ -300,7 +312,9 @@ public class Lab1 {
     if (waitingTrain != null){
       System.out.println("Notifiying train " + waitingTrain.getId());
       if (sem.tryAcquire()){
+        System.out.println("Train " + waitingTrain.getId() + " acquired");
         try{
+          System.out.println("Resuming sema" + sem);
           waitingTrain.resume();
         } catch (CommandException e) {
           throw new RuntimeException(e);
