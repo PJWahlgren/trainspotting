@@ -2,17 +2,16 @@ import TSim.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Semaphore;
 
 public class Lab1 {
   Train[] trains;
-  Semaphore sem1 = new Semaphore(1);
-  Semaphore sem2 = new Semaphore(1);
-  Semaphore sem3 = new Semaphore(1);
-  Semaphore sem4 = new Semaphore(1);
-  Semaphore semDorE = new Semaphore(1);
-  Semaphore semAorB = new Semaphore(1);
-  Semaphore SemGorH = new Semaphore(1);
+  BinarySemaphore semCrossing = new BinarySemaphore();
+  BinarySemaphore semC = new BinarySemaphore();
+  //Semaphore semGoingOutOfDorE = new BinarySemaphore();
+  BinarySemaphore semF = new BinarySemaphore();
+  BinarySemaphore semDorE = new BinarySemaphore();
+  BinarySemaphore semAorB = new BinarySemaphore();
+  BinarySemaphore semGorH = new BinarySemaphore();
 
   //There may only be one train waiting. If there are more, then we have an issue!
   Train waitingTrain;
@@ -35,21 +34,21 @@ public class Lab1 {
     TrainSensor b3 = new TrainSensor(10,8);
     TrainSensor b4 = new TrainSensor(15,8);
 
-    TrainSensor c1 = new TrainSensor(18,7);
-    TrainSensor c2 = new TrainSensor(16,9);
+    TrainSensor c1 = new TrainSensor(16,9);
+    //TrainSensor c2 = new TrainSensor(16,9);
 
-    TrainSensor d1 = new TrainSensor(7,9);
-    TrainSensor d2 = new TrainSensor(12,9);
+    TrainSensor d1 = new TrainSensor(5,9);
+    TrainSensor d2 = new TrainSensor(14,9);
 
-    TrainSensor e1 = new TrainSensor(6,10);
-    TrainSensor e2 = new TrainSensor(13,10);
+    TrainSensor e1 = new TrainSensor(5,10);
+    TrainSensor e2 = new TrainSensor(14,10);
 
-    TrainSensor f1 = new TrainSensor(1,10);
+    TrainSensor f1 = new TrainSensor(3,9);
 
-    TrainSensor g1 = new TrainSensor(6,11);
+    TrainSensor g1 = new TrainSensor(4,11);
     TrainSensor g2 = new TrainSensor(14,11);
 
-    TrainSensor h1 = new TrainSensor(4,13);
+    TrainSensor h1 = new TrainSensor(3,12);
     TrainSensor h2 = new TrainSensor(14,13);
 
     sensors.add(a1);
@@ -62,7 +61,7 @@ public class Lab1 {
     sensors.add(b3);
     sensors.add(b4);
 
-    sensors.add(c2);
+    sensors.add(c1);
 
     sensors.add(d1);
     sensors.add(d2);
@@ -78,6 +77,25 @@ public class Lab1 {
     sensors.add(h1);
     sensors.add(h2);
 
+    semCrossing.addTrainSensor(a2);
+    semCrossing.addTrainSensor(a3);
+    semCrossing.addTrainSensor(b2);
+    semCrossing.addTrainSensor(b3);
+
+    semC.addTrainSensor(a4);
+    semC.addTrainSensor(b4);
+    semC.addTrainSensor(d2);
+    semC.addTrainSensor(e2);
+
+    semDorE.addTrainSensor(c1);
+    semDorE.addTrainSensor(f1);
+
+    semF.addTrainSensor(d1);
+    semF.addTrainSensor(e1);
+    semF.addTrainSensor(g1);
+    semF.addTrainSensor(h1);
+    semAorB.tryAcquire();
+    semGorH.tryAcquire();
     try {
       TrackSwitch s1 = new TrackSwitch(17,7);
       TrackSwitch s2 = new TrackSwitch(15,9);
@@ -90,182 +108,210 @@ public class Lab1 {
         train1.addPropertyChangeListener(sensor);
         train2.addPropertyChangeListener(sensor);
       }
-      a1.setCommand((id, status) -> {
-        stopwaitrevert(id,train1.getSpeed() < 0,train2.getSpeed() > 0);
+      a1.setCommandOnActive((evt) -> {
+        stopwaitrevert(evt.getTrainId(), train1.getSpeed() < 0,train2.getSpeed() > 0);
       });
-      a2.setCommand((id, status) -> {
-        if (trains[id].isGoingUp()){
-          sem1.release();
-          notifyTrainWaiting(sem1);
-        }
+      a2.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingUp())
+          semCrossing.releaseThenNotifyAllSensors();
         else
-          activateSemaphore(id, Train.Direction.DOWN,sem1);
+        if (!semCrossing.tryAcquire(evt))
+          getTrain(evt).stop();
       });
-      a3.setCommand((id, status) -> {
-        if (trains[id].isGoingDown()){
-          sem1.release();
-          notifyTrainWaiting(sem1);
-        }else
-          activateSemaphore(id, Train.Direction.UP,sem1);
+      a3.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingUp())
+          if (!semCrossing.tryAcquire(evt))
+            getTrain(evt).stop();
       });
-      a4.setCommand((id, status) -> {
-        if (trains[id].isGoingUp()){
-          s1.invertDirection();
-          sem2.release();
-          notifyTrainWaiting(sem2);
-        }
-        else{
-          if (isSemaphoreAvailable(sem2))
+      a3.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingDown())
+          semCrossing.releaseThenNotifyAllSensors();
+      });
+      a4.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingDown())
+          if (semC.tryAcquire(evt)){
+            getTrain(evt).resume();
             s1.switchRight();
-          activateSemaphore(id, Train.Direction.DOWN, sem2);
-        }
-      });
-
-      b1.setCommand((id, status) -> {
-        stopwaitrevert(id,train1.getSpeed() < 0,train2.getSpeed() > 0);
-      });
-      b2.setCommand((id, status) -> {
-        if (trains[id].isGoingUp()){
-          sem1.release();
-          notifyTrainWaiting(sem1);
-        }
-        else
-          activateSemaphore(id, Train.Direction.DOWN,sem1);
-      });
-      b3.setCommand((id, status) -> {
-        if (trains[id].isGoingDown()){
-          sem1.release();
-          notifyTrainWaiting(sem1);
-        }else
-          activateSemaphore(id, Train.Direction.UP,sem1);
-      });
-      b4.setCommand((id, status) -> {
-        if (trains[id].isGoingUp()){
-          s1.invertDirection();
-          sem2.release();
-          notifyTrainWaiting(sem2);
-        }
-        else {
-          if (isSemaphoreAvailable(sem2))
-            s1.switchLeft();
-          activateSemaphore(id, Train.Direction.DOWN, sem2);
-        }
-
-      });
-      c1.setCommand((id, status) -> {
-        if (trains[id].isGoingUp()){
-          sem3.release();
-          if (isSemaphoreAvailable(semAorB))
-            s1.switchRight();
+          }
           else
-            s1.switchLeft();
-          notifyTrainWaiting(sem3);
-        }
+            getTrain(evt).stop();
       });
-      c2.setCommand((id, status) -> {
-        if (trains[id].isGoingDown()){
+      a4.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingUp())
+          semC.releaseThenNotifyAllSensors();
+        else
+          semAorB.releaseThenNotifyAllSensors();
+      });
+
+      b1.setCommandOnActive((evt) -> {
+        stopwaitrevert(evt.getTrainId(), train1.getSpeed() < 0,train2.getSpeed() > 0);
+      });
+      b2.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingUp())
+          semCrossing.releaseThenNotifyAllSensors();
+        else
+          if (!semCrossing.tryAcquire(evt))
+            getTrain(evt).stop();
+      });
+      b3.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingDown())
+          semCrossing.releaseThenNotifyAllSensors();
+        else
+          if (!semCrossing.tryAcquire(evt))
+            getTrain(evt).stop();
+          else
+            getTrain(evt).resume();
+      });
+      b4.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingDown())
+          if (semC.tryAcquire(evt)){
+            s1.switchLeft();
+            getTrain(evt).resume();
+          }
+          else
+            getTrain(evt).stop();
+      });
+      b4.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingUp())
+          semC.releaseThenNotifyAllSensors();
+      });
+
+      c1.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingDown()) {
+          //System.out.println("semDorE activated: " + semDorE);
           if (semDorE.tryAcquire())
             s2.switchRight();
           else
             s2.switchLeft();
-          s1.invertDirection();
-          sem2.release();
-          notifyTrainWaiting(sem2);
-        }else
-          if (semDorE.availablePermits() < 1)
-            semDorE.release();
-      });
-
-      d1.setCommand((id, status) -> {
-        if (trains[id].isGoingDown()){
-          if (isSemaphoreAvailable(sem3))
-            s3.switchLeft();
-          activateSemaphore(id, Train.Direction.DOWN, sem3);
-        }else {
-          sem4.release();
-          s4.invertDirection();
-          System.out.println(sem4);
-          notifyTrainWaiting(sem4);
-        }
-      });
-      d2.setCommand((id, status) -> {
-        if (trains[id].isGoingUp()){
-          if (sem2.availablePermits() == 1)
-            s2.switchRight();
-          activateSemaphore(id, Train.Direction.UP, sem2);
-        }
-      });
-
-      e1.setCommand((id, status) -> {
-        if (trains[id].isGoingDown()){
-          if (sem3.availablePermits() == 1)
-            s3.switchRight();
-          activateSemaphore(id, Train.Direction.DOWN, sem3);
-        }else {
-          sem4.release();
-          s4.invertDirection();
-          System.out.println(sem4);
-          notifyTrainWaiting(sem4);
-        }
-      });
-      e2.setCommand((id, status) -> {
-        if (trains[id].isGoingUp()){
-          if (sem2.availablePermits() == 1)
-            s2.switchLeft();
-          activateSemaphore(id, Train.Direction.UP, sem2);
-        }
-      });
-
-      f1.setCommand((id, status) -> {
-        if (trains[id].isGoingDown()){
-          activateSemaphore(id, Train.Direction.DOWN, sem4);
-          System.out.println(sem4);
-          s3.invertDirection();
-          if (semDorE.availablePermits() < 1)
-            semDorE.release();
         }else{
+          if (semAorB.tryAcquire())
+            s1.switchRight();
+          else
+            s1.switchLeft();
+        }
+      });
+      c1.setCommandOnInactive(evt -> {
+      });
+
+      d1.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingDown()) {
+          //System.out.println("semF activated: " + semF);
+          if (!semF.tryAcquire(evt))
+            getTrain(evt).stop();
+          else{
+            s3.switchLeft();
+            getTrain(evt).resume();
+          }
+        }
+      });
+      d1.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingUp())
+          semF.releaseThenNotifyAllSensors();
+        else
+          semDorE.releaseThenNotifyAllSensors();
+        //System.out.println("semF released: " + semF);
+      });
+      d2.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingUp()){
+          if (!semC.tryAcquire(evt))
+            getTrain(evt).stop();
+          else {
+            s2.switchRight();
+            getTrain(evt).resume();
+          }
+        }
+      });
+      d2.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingDown())
+          semC.releaseThenNotifyAllSensors();
+        else
+          semDorE.releaseThenNotifyAllSensors();
+      });
+
+      e1.setCommandOnActive((evt) -> {
+        //System.out.println("semF released: " + semF);
+        if (getTrain(evt).isGoingDown())
+          if (!semF.tryAcquire(evt))
+            getTrain(evt).stop();
+          else{
+            s3.switchRight();
+            getTrain(evt).resume();
+          }
+      });
+      e1.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingUp())
+          semF.releaseThenNotifyAllSensors();
+      });
+
+      e2.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingUp()){
+          if (!semC.tryAcquire(evt))
+            getTrain(evt).stop();
+          else {
+            s2.switchLeft();
+            getTrain(evt).resume();
+          }
+        }
+      });
+      e2.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingDown())
+          semC.releaseThenNotifyAllSensors();
+      });
+
+      f1.setCommandOnActive((evt) -> {
+        //System.out.println("semDorE activated: " + semDorE);
+        if (getTrain(evt).isGoingUp()){
           if (semDorE.tryAcquire())
             s3.switchLeft();
           else
             s3.switchRight();
         }
       });
-
-      g1.setCommand((id, status) -> {
-        if (trains[id].isGoingUp()){
-          System.out.println("sem4 " + isSemaphoreAvailable(sem4));
-          if (isSemaphoreAvailable(sem4))
+      f1.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingDown()) {
+          //System.out.println("semDorE released: " + semDorE);
+          if (semGorH.tryAcquire())
             s4.switchLeft();
-          activateSemaphore(id, Train.Direction.UP, sem4);
-        }else{
-          sem3.release();
-          notifyTrainWaiting(sem3);
-          sem4.release();
-          System.out.println(sem4);
-          s4.invertDirection();
-          notifyTrainWaiting(sem4);
+          else
+            s4.switchRight();
         }
-      });
-      g2.setCommand((id, status) -> {
-        stopwaitrevert(id,train1.getSpeed() > 0,train2.getSpeed() < 0);
       });
 
-      h1.setCommand((id, status) -> {
-        if (trains[id].isGoingUp()){
-          if (isSemaphoreAvailable(sem4))
-            s4.switchRight();
-          activateSemaphore(id, Train.Direction.UP, sem4);
-        }else{
-          sem4.release();
-          notifyTrainWaiting(sem4);
-          sem3.release();
-          notifyTrainWaiting(sem3);
-          System.out.println(sem4);
-          s4.invertDirection();
+      g1.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingUp()) {
+          if (!semF.tryAcquire(evt))
+            getTrain(evt).stop();
+          else {
+            s4.switchLeft();
+            getTrain(evt).resume();
+            //System.out.println("semF activated: " + semF);
+          }
         }
       });
-      h2.setCommand((id, status) -> {
-        stopwaitrevert(id,train1.getSpeed() > 0,train2.getSpeed() < 0);
+      g1.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingDown())
+          semF.releaseThenNotifyAllSensors();
+        else
+          semGorH.releaseThenNotifyAllSensors();
+
+      });
+      g2.setCommandOnActive((evt) -> {
+        stopwaitrevert(evt.getTrainId(),train1.getSpeed() > 0,train2.getSpeed() < 0);
+      });
+
+      h1.setCommandOnActive((evt) -> {
+        if (getTrain(evt).isGoingUp())
+          if (!semF.tryAcquire(evt))
+            getTrain(evt).stop();
+          else
+            s4.switchRight();
+      });
+      h1.setCommandOnInactive(evt -> {
+        if (getTrain(evt).isGoingDown())
+          semF.releaseThenNotifyAllSensors();
+      });
+      h2.setCommandOnActive((evt) -> {
+        stopwaitrevert(evt.getTrainId(),train1.getSpeed() > 0,train2.getSpeed() < 0);
       });
     }
     catch (CommandException e) {
@@ -274,13 +320,21 @@ public class Lab1 {
     }
   }
 
-  private void stopwaitrevert(int id,boolean condition0, boolean condition1){
+  /**
+   * It stops, wait, and then revert the train's direction. In that order. The conditions
+   * are there so the train don't stop right away when they go but only when it
+   * makes sense
+   * @param id                 Train id
+   * @param conditionForTrain1 Condition for Train 1.
+   * @param conditionForTrain2 Condition for Train 2.
+   */
+  private void stopwaitrevert(int id, boolean conditionForTrain1, boolean conditionForTrain2){
     boolean condition;
     if (id == 1){
-      condition = condition0;
+      condition = conditionForTrain1;
     }
     else{
-      condition = condition1;
+      condition = conditionForTrain2;
     }
     try{
       if (condition){
@@ -293,37 +347,7 @@ public class Lab1 {
       throw new RuntimeException(e);
     }
   }
-  private void activateSemaphore(int id, Train.Direction direction, Semaphore sem){
-    if (trains[id].getDirection() == direction){
-      if (!sem.tryAcquire()){
-        System.out.println("Train " + id + " could not acquire");
-        waitingTrain = trains[id];
-        try{
-          waitingTrain.stop();
-        } catch (CommandException e) {
-          throw new RuntimeException(e);
-        }
-      }
-      else
-        System.out.println("Train " + id + " says rock on!");
-    }
-  }
-  private void notifyTrainWaiting(Semaphore sem){
-    if (waitingTrain != null){
-      System.out.println("Notifiying train " + waitingTrain.getId());
-      if (sem.tryAcquire()){
-        System.out.println("Train " + waitingTrain.getId() + " acquired");
-        try{
-          System.out.println("Resuming sema" + sem);
-          waitingTrain.resume();
-        } catch (CommandException e) {
-          throw new RuntimeException(e);
-        }
-        waitingTrain = null;
-      }
-    }
-  }
-  private boolean isSemaphoreAvailable(Semaphore sem){
-    return sem.availablePermits() == 1;
+  private Train getTrain(SensorEvent event){
+    return trains[event.getTrainId()];
   }
 }

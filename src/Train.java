@@ -28,7 +28,6 @@ public class Train{
                     SensorEvent ev = tsi.getSensor(id);
                     support.firePropertyChange(Integer.toString(id), this.event, ev);
                     event = ev;
-                    //System.out.println("@train " + event);
                 } catch (CommandException | InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -36,6 +35,11 @@ public class Train{
         });
         t.start();
     }
+
+    /**
+     * A way to add observers to each train
+     * @param pcl Observer, in this case the input expects TrainSensor.
+     */
     public void addPropertyChangeListener(PropertyChangeListener pcl) {
         support.addPropertyChangeListener(pcl);
     }
