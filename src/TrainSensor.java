@@ -29,7 +29,7 @@ public class TrainSensor implements PropertyChangeListener {
                 && event.getStatus() == SensorEvent.ACTIVE) {
             //System.out.println("@Sensor " + evt.getNewValue());
             try {
-                command.execute(event.getTrainId());
+                command.execute(event.getTrainId(), event.getStatus());
             } catch (CommandException e) {
                 throw new RuntimeException(e);
             }
