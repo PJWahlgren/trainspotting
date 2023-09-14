@@ -35,7 +35,6 @@ public class Lab1 {
     TrainSensor b4 = new TrainSensor(15,8);
 
     TrainSensor c1 = new TrainSensor(16,9);
-    //TrainSensor c2 = new TrainSensor(16,9);
 
     TrainSensor d1 = new TrainSensor(5,9);
     TrainSensor d2 = new TrainSensor(14,9);
@@ -117,11 +116,15 @@ public class Lab1 {
         else
         if (!semCrossing.tryAcquire(evt))
           getTrain(evt).stop();
+        else
+          getTrain(evt).resume();
       });
       a3.setCommandOnActive((evt) -> {
         if (getTrain(evt).isGoingUp())
           if (!semCrossing.tryAcquire(evt))
             getTrain(evt).stop();
+          else
+            getTrain(evt).resume();
       });
       a3.setCommandOnInactive(evt -> {
         if (getTrain(evt).isGoingDown())
@@ -303,8 +306,10 @@ public class Lab1 {
         if (getTrain(evt).isGoingUp())
           if (!semF.tryAcquire(evt))
             getTrain(evt).stop();
-          else
+          else{
             s4.switchRight();
+            getTrain(evt).resume();
+          }
       });
       h1.setCommandOnInactive(evt -> {
         if (getTrain(evt).isGoingDown())

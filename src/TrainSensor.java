@@ -44,7 +44,7 @@ public class TrainSensor implements PropertyChangeListener {
      */
     public void activateSensor(SensorEvent event){
         if (isSensor(event)) {
-            System.out.println("Sensor @(" + event.getXpos() + "," + event.getYpos() + ") " + event.getStatus());
+            //System.out.println("Sensor @(" + event.getXpos() + "," + event.getYpos() + ") " + event.getStatus());
             try {
                 if (commandOnActive != null && event.getStatus() == SensorEvent.ACTIVE)
                     commandOnActive.execute(event);

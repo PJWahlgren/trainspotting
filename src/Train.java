@@ -55,7 +55,7 @@ public class Train{
      */
     public void stop() throws CommandException {
         tsi.setSpeed(id,0);
-        System.out.println("Train " + id + " stopping");
+        //System.out.println("Train " + id + " stopping");
     }
 
     /**
@@ -64,7 +64,7 @@ public class Train{
      */
     public void resume() throws CommandException{
         tsi.setSpeed(id,speed);
-        System.out.println("Train " + id + " resuming");
+        //System.out.println("Train " + id + " resuming");
     }
 
     /**

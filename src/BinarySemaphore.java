@@ -60,11 +60,8 @@ public class BinarySemaphore{
      */
     public boolean tryAcquire(SensorEvent event) {
         boolean succeeded = semaphore.tryAcquire();
-        if (!succeeded) {
+        if (!succeeded)
             queuedEvent = event;
-            //System.out.println("Could not acquire.");
-        }else
-            System.out.println("Success!");
         return succeeded;
     }
     public boolean tryAcquire(){
