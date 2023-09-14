@@ -36,18 +36,18 @@ public class Lab1 {
 
     TrainSensor c1 = new TrainSensor(16,9);
 
-    TrainSensor d1 = new TrainSensor(5,9);
-    TrainSensor d2 = new TrainSensor(14,9);
+    TrainSensor d1 = new TrainSensor(6,9);
+    TrainSensor d2 = new TrainSensor(13,9);
 
     TrainSensor e1 = new TrainSensor(5,10);
     TrainSensor e2 = new TrainSensor(14,10);
 
     TrainSensor f1 = new TrainSensor(3,9);
 
-    TrainSensor g1 = new TrainSensor(4,11);
+    TrainSensor g1 = new TrainSensor(5,11);
     TrainSensor g2 = new TrainSensor(14,11);
 
-    TrainSensor h1 = new TrainSensor(3,12);
+    TrainSensor h1 = new TrainSensor(3,13);
     TrainSensor h2 = new TrainSensor(14,13);
 
     sensors.add(a1);
@@ -113,11 +113,12 @@ public class Lab1 {
       a2.setCommandOnActive((evt) -> {
         if (getTrain(evt).isGoingUp())
           semCrossing.releaseThenNotifyAllSensors();
-        else
-        if (!semCrossing.tryAcquire(evt))
-          getTrain(evt).stop();
-        else
-          getTrain(evt).resume();
+        else{
+          if (!semCrossing.tryAcquire(evt))
+            getTrain(evt).stop();
+          else
+            getTrain(evt).resume();
+        }
       });
       a3.setCommandOnActive((evt) -> {
         if (getTrain(evt).isGoingUp())
@@ -155,6 +156,8 @@ public class Lab1 {
         else
           if (!semCrossing.tryAcquire(evt))
             getTrain(evt).stop();
+          else
+            getTrain(evt).resume();
       });
       b3.setCommandOnActive((evt) -> {
         if (getTrain(evt).isGoingDown())
@@ -296,7 +299,6 @@ public class Lab1 {
           semF.releaseThenNotifyAllSensors();
         else
           semGorH.releaseThenNotifyAllSensors();
-
       });
       g2.setCommandOnActive((evt) -> {
         stopwaitrevert(evt.getTrainId(),train1.getSpeed() > 0,train2.getSpeed() < 0);
